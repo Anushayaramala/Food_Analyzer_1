@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Food Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #181818;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --accent: #c8f56a;
+    --accent2: #a8e04a;
+    --text: #f0f0f0;
+    --muted: #888;
+    --muted2: #555;
+    --red: #ff6b6b;
+    --orange: #ff9f43;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
+
+  .header-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+
+  .header-eyebrow::before {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--accent);
+  }
+  .header-eyebrow::after {
+    content: '';
+    width: 20px;
+    height: 1px;
+    background: var(--accent);
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 2.4rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 10px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .header-sub {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  /* Input card */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .input-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--muted2); }
+
+  .analyze-btn {
+    background: var(--accent);
+    color: #0a0a0a;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.02em;
+  }
+
+  .analyze-btn:hover { background: var(--accent2); }
+  .analyze-btn:active { transform: scale(0.97); }
+  .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Sample pills */
+  .samples {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .sample-pill {
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font-body);
+  }
+
+  .sample-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Loading */
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .loading.visible { display: block; }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result card */
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    overflow: hidden;
+    display: none;
+    animation: fadeUp 0.4s ease;
+  }
+
+  .result-card.visible { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Image preview strip */
+  .image-strip {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Dish title bar */
+  .dish-bar {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .dish-name {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .health-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 8px 14px;
+    min-width: 60px;
+    flex-shrink: 0;
+  }
+
+  .health-score-num {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .health-score-label {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Macros row */
+  .macros-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .macro {
+    background: var(--surface);
+    padding: 1rem 0.75rem;
+    text-align: center;
+  }
+
+  .macro-val {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .macro-label {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Content sections */
+  .sections {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .section-title {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: var(--font-display);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+  }
+
+  .tag.allergen {
+    background: rgba(255, 107, 107, 0.1);
+    color: var(--red);
+    border-color: rgba(255,107,107,0.2);
+  }
+
+  .tag.none {
+    background: rgba(200, 245, 106, 0.08);
+    color: var(--accent);
+    border-color: rgba(200,245,106,0.15);
+  }
+
+  .insight-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  /* Footer */
+  .card-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .powered-by {
+    font-size: 11px;
+    color: var(--muted2);
+    letter-spacing: 0.05em;
+  }
+
+  .powered-by span { color: var(--accent); }
+
+  .screenshot-hint {
+    font-size: 11px;
+    color: var(--muted2);
+  }
+
+  /* Error */
+  .error-msg {
+    background: rgba(255,107,107,0.08);
+    border: 1px solid rgba(255,107,107,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--red);
+    display: none;
+    margin-top: 10px;
+  }
+
+  .error-msg.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="header-eyebrow">GPT-4o Vision</div>
+    <h1>AI Food<br><span>Analyzer</span></h1>
+    <p class="header-sub">Drop any food image URL — get instant nutrition intel</p>
+  </div>
+
+  <div class="input-card">
+    <span class="input-label">Image URL</span>
+    <div class="input-row">
+      <input type="text" id="imageUrl" placeholder="https://example.com/food.jpg" />
+      <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">Analyze</button>
+    </div>
+    <div class="samples">
+      <span class="sample-pill" onclick="useSample('pizza')">Pizza</span>
+      <span class="sample-pill" onclick="useSample('salad')">Salad</span>
+      <span class="sample-pill" onclick="useSample('burger')">Burger</span>
+      <span class="sample-pill" onclick="useSample('sushi')">Sushi</span>
+    </div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    Asking GPT-4o to analyze your food...
+  </div>
+
+  <div class="result-card" id="resultCard">
+    <img class="image-strip" id="foodImage" src="" alt="Food" />
+    <div class="dish-bar">
+      <div class="dish-name" id="dishName">—</div>
+      <div class="health-badge">
+        <span class="health-score-num" id="healthScore">—</span>
+        <span class="health-score-label">health</span>
+      </div>
+    </div>
+    <div class="macros-row">
+      <div class="macro"><span class="macro-val" id="calories">—</span><span class="macro-label">kcal</span></div>
+      <div class="macro"><span class="macro-val" id="protein">—</span><span class="macro-label">protein</span></div>
+      <div class="macro"><span class="macro-val" id="carbs">—</span><span class="macro-label">carbs</span></div>
+      <div class="macro"><span class="macro-val" id="fat">—</span><span class="macro-label">fat</span></div>
+    </div>
+    <div class="sections">
+      <div>
+        <div class="section-title">Ingredients</div>
+        <div class="tags" id="ingredients"></div>
+      </div>
+      <div>
+        <div class="section-title">Allergens</div>
+        <div class="tags" id="allergens"></div>
+      </div>
+      <div>
+        <div class="section-title">Nutrition insight</div>
+        <p class="insight-text" id="insight">—</p>
+      </div>
+    </div>
+    <div class="card-footer">
+      <span class="powered-by">Powered by <span>GPT-4o Vision</span></span>
+      <span class="screenshot-hint">Built with Python + OpenAI API</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const SAMPLES = {
+  pizza:  "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800",
+  salad:  "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800",
+  burger: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800",
+  sushi:  "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800"
+};
+
+function useSample(name) {
+  document.getElementById('imageUrl').value = SAMPLES[name];
+  analyze();
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorMsg');
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function hideError() {
+  document.getElementById('errorMsg').classList.remove('visible');
+}
+
+function setLoading(on) {
+  document.getElementById('loading').classList.toggle('visible', on);
+  document.getElementById('analyzeBtn').disabled = on;
+  if (on) document.getElementById('resultCard').classList.remove('visible');
+}
+
+function scoreColor(score) {
+  if (score >= 8) return '#c8f56a';
+  if (score >= 5) return '#ff9f43';
+  return '#ff6b6b';
+}
+
+async function analyze() {
+  const url = document.getElementById('imageUrl').value.trim();
+  if (!url) { showError('Please enter an image URL first.'); return; }
+  if (!url.startsWith('http')) { showError('URL must start with http:// or https://'); return; }
+
+  hideError();
+  setLoading(true);
+
+  try {
+    // Calls your local Flask server → food_analyzer.py → OpenAI API
+    const response = await fetch("/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: url })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || result.error) {
+      throw new Error(result.error || 'Server error');
+    }
+
+    // Populate UI
+    document.getElementById('foodImage').src = url;
+    document.getElementById('dishName').textContent = result.dish || '—';
+
+    const score = result.health_score || 0;
+    const scoreEl = document.getElementById('healthScore');
+    scoreEl.textContent = score + '/10';
+    scoreEl.style.color = scoreColor(score);
+
+    document.getElementById('calories').textContent = result.calories || '—';
+    document.getElementById('protein').textContent = result.protein || '—';
+    document.getElementById('carbs').textContent = result.carbs || '—';
+    document.getElementById('fat').textContent = result.fat || '—';
+
+    const ingDiv = document.getElementById('ingredients');
+    ingDiv.innerHTML = (result.ingredients || [])
+      .map(i => `<span class="tag">${i}</span>`).join('');
+
+    const algDiv = document.getElementById('allergens');
+    const allergens = result.allergens || ['None detected'];
+    algDiv.innerHTML = allergens
+      .map(a => `<span class="tag ${a === 'None detected' ? 'none' : 'allergen'}">${a}</span>`).join('');
+
+    document.getElementById('insight').textContent = result.insight || '—';
+
+    setLoading(false);
+    document.getElementById('resultCard').classList.add('visible');
+
+  } catch (err) {
+    setLoading(false);
+    showError('Could not analyze image. Check the URL is a direct image link (ends in .jpg, .png, .webp).');
+    console.error(err);
+  }
+}
+
+document.getElementById('imageUrl').addEventListener('keydown', e => {
+  if (e.key === 'Enter') analyze();
+});
+</script>
+</body>
+</html>
