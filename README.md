@@ -91,7 +91,7 @@ The core insight: GPT-4o already knows nutrition science. The system prompt just
 
 ## 📬 Connect
 
-Built by [Your Name] · [Your LinkedIn URL]  
+Built by Anusha Yaramala · https://www.linkedin.com/in/anusha-yaramala20/  
 Part of my #BuildingInPublic AI engineering journey.
 
 ---
